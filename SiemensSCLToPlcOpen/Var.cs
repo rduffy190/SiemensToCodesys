@@ -11,6 +11,8 @@ namespace SiemensSCLToPlcOpen
         public string Name;
         public string Type;
         public string Value;
-        public bool hasStartup; 
+        public bool hasStartup;
+        public string comment;
+        public bool hasComment; 
     }
 }

@@ -16,6 +16,7 @@ using System.Collections;
 using System.Diagnostics;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using PlcOpenBuilder;
+using System.CodeDom;
 
 namespace SiemensSCLToPlcOpen
 {
@@ -51,8 +52,10 @@ namespace SiemensSCLToPlcOpen
             List<Variable> _output = new List<Variable>();
             List<Variable> _inOut = new List<Variable>();
             List<Variable> _var = new List<Variable>();
+            List<Variable> _varConstant = new List<Variable>();
             List<Variable> _varRetain = new List<Variable>();
             List<Variable> _varTemp  = new List<Variable>();
+            PlcOpen builder = new PlcOpen("AWL", "Ctrlx", "V1", "GenCode");
             string _st = ""; 
 
             foreach (string line in lines) {
@@ -67,6 +70,14 @@ namespace SiemensSCLToPlcOpen
                             _name = line.Substring(firstQuote + 1, secondQuote - firstQuote - 1);
                             _state = BuildState.GetInterface;
                         }
+                        else if (line.Contains("FUNCTION"))
+                        {
+                            _type = POUType.Function;
+                            int firstQuote = line.IndexOf('\"');
+                            int secondQuote = line.IndexOf('\"', firstQuote + 1);
+                            _name = line.Substring(firstQuote + 1, secondQuote - firstQuote - 1);
+                            _state = BuildState.GetInterface;
+                        }
                         break;
                     case BuildState.GetInterface:
                         if (line.Contains("VAR_INPUT"))
@@ -76,10 +87,12 @@ namespace SiemensSCLToPlcOpen
                         else if (line.Contains("VAR_IN_OUT "))
                             _state = BuildState.GetInOut;
                         else if (line.Contains("VAR RETAIN"))
-                            _state = BuildState.GetVar;
-                        else if (line.Contains("VAR"))
-                            _state = BuildState.GetVar;
+                            _state = BuildState.GetVarRetain;
                         else if (line.Contains("VAR_TEMP"))
+                            _state = BuildState.GetVarTemp;
+                        else if (line.Contains("VAR CONSTANT"))
+                            _state = BuildState.GetVarConstant;
+                        else if (line.Contains("VAR"))
                             _state = BuildState.GetVar;
                         else if (line.Contains("BEGIN"))
                             _state = BuildState.GetCode; 
@@ -108,14 +121,34 @@ namespace SiemensSCLToPlcOpen
                         else
                             _var.Add(getVariable(line));
                         break;
+                    case BuildState.GetVarRetain:
+                        if (line.Contains("END_VAR"))
+                            _state = BuildState.GetInterface;
+                        else
+                            _varRetain.Add(getVariable(line));
+                        break;
+                    case BuildState.GetVarConstant:
+                        if (line.Contains("END_VAR"))
+                            _state = BuildState.GetInterface;
+                        else
+                            _varConstant.Add(getVariable(line));
+                        break;
+                    case BuildState.GetVarTemp:
+                        if (line.Contains("END_VAR"))
+                            _state = BuildState.GetInterface;
+                        else
+                            _varTemp.Add(getVariable(line));
+                        break;
                     case BuildState.GetCode:
                         if (!line.Contains("END_FUNCTION"))
-                            _st = string.Concat(string.Concat(_st,line.Replace("#", ""), "\r\n"));
+                        {
+                            string st_line = Regex.Replace(line, @"(?<![tT0-9])#", ""); ;
+                            _st = string.Concat(_st,string.Concat(st_line, "\r\n"));
+                        }
                         else
                             _state = BuildState.Create;
                         break;
                     case BuildState.Create:
-                        PlcOpen builder = new PlcOpen("AWL", "Ctrlx", "V1", "GenCode");
                         builder.AddPou(_name, _type);
                         foreach(Variable input in _input)
                         {
@@ -123,6 +156,10 @@ namespace SiemensSCLToPlcOpen
                             if (input.hasStartup)
                             {
                                 builder.InitialValue(_name, input.Name, input.Value); 
+                            }
+                            if (input.hasComment)
+                            {
+                                builder.VarComment(_name, input.Name, input.comment);
                             }
                         }
                         foreach (Variable output in _output)
@@ -132,6 +169,10 @@ namespace SiemensSCLToPlcOpen
                             {
                                 builder.InitialValue(_name, output.Name, output.Value);
                             }
+                            if (output.hasComment)
+                            {
+                                builder.VarComment(_name, output.Name, output.comment);
+                            }
                         }
                         foreach (Variable inOut in _inOut)
                         {
@@ -139,6 +180,10 @@ namespace SiemensSCLToPlcOpen
                             if (inOut.hasStartup)
                             {
                                 builder.InitialValue(_name, inOut.Name, inOut.Value);
+                            }
+                            if (inOut.hasComment)
+                            {
+                                builder.VarComment(_name, inOut.Name, inOut.comment);
                             }
                         }
                         foreach (Variable var in _var)
@@ -148,20 +193,64 @@ namespace SiemensSCLToPlcOpen
                             {
                                 builder.InitialValue(_name, var.Name, var.Value);
                             }
+                            if (var.hasComment)
+                            {
+                                builder.VarComment(_name, var.Name, var.comment);
+                            }
+                        }
+                        foreach (Variable var in _varRetain)
+                        {
+                            builder.AddPersistentVar(_name, var.Name, var.Type);
+                            if (var.hasStartup)
+                            {
+                                builder.InitialValue(_name, var.Name, var.Value);
+                            }
+                            if (var.hasComment)
+                            {
+                                builder.VarComment(_name, var.Name, var.comment); 
+                            }
+                        }
+                        foreach (Variable var in _varConstant)
+                        {
+                            builder.AddConstVar(_name, var.Name, var.Type);
+                            if (var.hasStartup)
+                            {
+                                builder.InitialValue(_name, var.Name, var.Value);
+                            }
+                            if (var.hasComment)
+                            {
+                                builder.VarComment(_name, var.Name, var.comment);
+                            }
+                        }
+                        foreach (Variable var in _varTemp)
+                        {
+                            builder.AddTemp(_name, var.Name, var.Type);
+                            if (var.hasStartup)
+                            {
+                                builder.InitialValue(_name, var.Name, var.Value);
+                            }
+                            if (var.hasComment)
+                            {
+                                builder.VarComment(_name, var.Name, var.comment);
+                            }
                         }
                         builder.CreateST(_name, _st);
-                        builder.SaveDoc(_name + ".XML");
+                        //builder.SaveDoc(_name + ".XML");
                         _st = "";
                         _input.Clear(); 
                         _output.Clear() ;
                         _var.Clear() ;
                         _inOut.Clear() ;
+                        _varTemp.Clear() ;
+                        _varConstant.Clear() ;
+                        _varRetain.Clear() ;
                         _type = POUType.Program;
                         _name = "";
                         _state = BuildState.GetType;
                        
                         break; 
                 }
+                builder.SaveDoc("SiemensExport.xml");
 
             }
         }
@@ -176,6 +265,13 @@ namespace SiemensSCLToPlcOpen
             {
                 variable.hasStartup = true;
                 variable.Value = Regex.Replace(var_line.Split(new[] { ":=", "//", "(*" }, StringSplitOptions.None)[1], @"\{.*?\}", "");;
+            }
+            string[] comment = var_line.Split(new[] { "//", "(*" }, StringSplitOptions.None); 
+            if (comment.Length >1)
+            {
+                string comm = comment[1].Trim().Replace("*)", "");
+                variable.comment = comm;
+                variable.hasComment = true; 
             }
             return variable;
         }
