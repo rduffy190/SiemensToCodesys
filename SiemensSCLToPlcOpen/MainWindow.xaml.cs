@@ -34,7 +34,6 @@ namespace SiemensSCLToPlcOpen
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
 
-            openFileDialog.InitialDirectory = "C:\\";
             openFileDialog.Filter = "All files (*.*)|*.*";
             openFileDialog.FilterIndex = 1;
             openFileDialog.RestoreDirectory = true;
@@ -46,6 +45,7 @@ namespace SiemensSCLToPlcOpen
             string content = File.ReadAllText(filePath);
             var lines = content.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
             BuildState _state = BuildState.GetType;
+            BuildState _lastState = _state; 
             POUType _type = POUType.Program;
             string _name = "";
             List<Variable> _input = new List<Variable>();
@@ -97,6 +97,12 @@ namespace SiemensSCLToPlcOpen
                         else if (line.Contains("BEGIN"))
                             _state = BuildState.GetCode; 
                         break;
+                    case BuildState.SkipStruct: 
+                        if(line.Contains("END_STRUCT"))
+                        {
+                            _state = _lastState; 
+                        }
+                        break; 
                     case BuildState.GetIn:
                         if (line.Contains("END_VAR"))
                             _state = BuildState.GetInterface;
@@ -252,9 +258,15 @@ namespace SiemensSCLToPlcOpen
                        
                         break; 
                 }
-                builder.SaveDoc("SiemensExport.xml");
+                if (line.Contains("Struct"))
+                {
+                    _lastState = _state; 
+                    _state = BuildState.SkipStruct;
+                }
+              
 
             }
+            builder.SaveDoc("SiemensExport.xml");
         }
         private Variable getVariable(string line)
         {
@@ -262,7 +274,8 @@ namespace SiemensSCLToPlcOpen
             string var_line = Regex.Replace(line, @"\{.*?\}", "");//Replace the Siemens Specific tags
             var_line = var_line.Replace(";", "");//XML doesnt want the ;
             variable.Name = Regex.Replace(var_line.Split(':')[0], @"\s+", "");//Get rid of the white space around the name
-            variable.Type = Regex.Replace(var_line.Split(new[] { ":", ":=" }, StringSplitOptions.None)[1].Replace("\"",""), @"\{.*?\}", "");//get the type declaration after : before :=
+                                                                              // variable.Type = Regex.Replace(var_line.Split(new[] { ":", ":=" }, StringSplitOptions.None)[1].Replace("\"",""), @"\{.*?\}", "");//get the type declaration after : before :=
+            variable.Type = var_line.Split(new[] { ":", ":=","//","(*" }, StringSplitOptions.None)[1]; 
             if (var_line.Contains(":="))//If there is an init, get it
             {
                 variable.hasStartup = true;
@@ -271,7 +284,10 @@ namespace SiemensSCLToPlcOpen
             string[] comment = var_line.Split(new[] { "//", "(*" }, StringSplitOptions.None); // get comments for the variable
             if (comment.Length >1)
             {
-                string comm = comment[1].Trim().Replace("*)", "");
+                string comm = "";
+                for(int i = 1; i < comment.Length; i++) {
+                    comm = string.Concat(comm, comment[i]);
+                }
                 variable.comment = comm;
                 variable.hasComment = true; 
             }
