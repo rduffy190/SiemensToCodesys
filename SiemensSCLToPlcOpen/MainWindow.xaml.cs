@@ -142,13 +142,14 @@ namespace SiemensSCLToPlcOpen
                     case BuildState.GetCode:
                         if (!line.Contains("END_FUNCTION"))
                         {
-                            string st_line = Regex.Replace(line, @"(?<![tT0-9])#", ""); ;
-                            _st = string.Concat(_st,string.Concat(st_line, "\r\n"));
+                            string st_line = Regex.Replace(line, @"(?<![tT0-9])#", ""); //Remove any # that isnt t#, T#, or type dec with numeric like 16# and 2#
+                            _st = string.Concat(_st,string.Concat(st_line, "\r\n")); //Add the line to the current ST and a new line
                         }
                         else
                             _state = BuildState.Create;
                         break;
                     case BuildState.Create:
+                        //Creates all the POU and adds interface and ST Code
                         builder.AddPou(_name, _type);
                         foreach(Variable input in _input)
                         {
@@ -235,7 +236,8 @@ namespace SiemensSCLToPlcOpen
                             }
                         }
                         builder.CreateST(_name, _st);
-                        //builder.SaveDoc(_name + ".XML");
+                        //builder.SaveDoc(_name + ".XML");  Now one doc does all FB/FC in exported file
+                        //Clear for next block build
                         _st = "";
                         _input.Clear(); 
                         _output.Clear() ;
@@ -257,16 +259,16 @@ namespace SiemensSCLToPlcOpen
         private Variable getVariable(string line)
         {
             Variable variable = new Variable();
-            string var_line = Regex.Replace(line, @"\{.*?\}", "");
-            var_line = var_line.Replace(";", "");
-            variable.Name = Regex.Replace(var_line.Split(':')[0], @"\s+", "");
-            variable.Type = Regex.Replace(var_line.Split(new[] { ":", ":=" }, StringSplitOptions.None)[1].Replace("\"",""), @"\{.*?\}", "");
-            if (var_line.Contains(":="))
+            string var_line = Regex.Replace(line, @"\{.*?\}", "");//Replace the Siemens Specific tags
+            var_line = var_line.Replace(";", "");//XML doesnt want the ;
+            variable.Name = Regex.Replace(var_line.Split(':')[0], @"\s+", "");//Get rid of the white space around the name
+            variable.Type = Regex.Replace(var_line.Split(new[] { ":", ":=" }, StringSplitOptions.None)[1].Replace("\"",""), @"\{.*?\}", "");//get the type declaration after : before :=
+            if (var_line.Contains(":="))//If there is an init, get it
             {
                 variable.hasStartup = true;
-                variable.Value = Regex.Replace(var_line.Split(new[] { ":=", "//", "(*" }, StringSplitOptions.None)[1], @"\{.*?\}", "");;
+                variable.Value = Regex.Replace(var_line.Split(new[] { ":=", "//", "(*" }, StringSplitOptions.None)[1], @"\{.*?\}", "");;//Grab the value that isnt comments or siemens specific tags
             }
-            string[] comment = var_line.Split(new[] { "//", "(*" }, StringSplitOptions.None); 
+            string[] comment = var_line.Split(new[] { "//", "(*" }, StringSplitOptions.None); // get comments for the variable
             if (comment.Length >1)
             {
                 string comm = comment[1].Trim().Replace("*)", "");
