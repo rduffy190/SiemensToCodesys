@@ -1,0 +1,8 @@
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\SiemensSCLToPlcOpen.pdb
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\D3DCompiler_47_cor3.dll
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\PenImc_cor3.dll
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\PresentationNative_cor3.dll
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\vcruntime140_cor3.dll
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\wpfgfx_cor3.dll
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\PlcOpenBuilder.pdb
+C:\Users\DUR1AT5\source\repos\SiemensSCLToPlcOpen\SiemensSCLToPlcOpen\bin\Release\net8.0-windows\publish\win-x64\SiemensSCLToPlcOpen.exe

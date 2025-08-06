@@ -9,8 +9,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Dependencies\" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="PlcOpenBuilder">
-      <HintPath>..\..\PlcOpenBuilder\PlcOpenBuilder\bin\Release\net8.0\PlcOpenBuilder.dll</HintPath>
+      <HintPath>Dependencies\PlcOpenBuilder.dll</HintPath>
     </Reference>
   </ItemGroup>
 

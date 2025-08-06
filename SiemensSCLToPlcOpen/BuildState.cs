@@ -14,7 +14,9 @@ namespace SiemensSCLToPlcOpen
         GetVarTemp,
         GetVarConstant,
         GetCode, 
-        SkipStruct,
-        Create
+        BuildStruct,
+        Create, 
+        BuildUdt, 
+        CloseUdt
     }
 }
